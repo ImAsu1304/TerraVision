@@ -32,4 +32,4 @@ const TileProgressIndicator = ({ tilesDone, totalTiles }) => {
 //     );
 // };
 
-// export default TileProgressIndicator;
+export default TileProgressIndicator;
