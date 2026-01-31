@@ -1,0 +1,10 @@
+{
+  "state": "Telangana",
+  "totalArea": 206670.14,
+  "breakdown": {
+    "bare_ground": 88842.92,
+    "build_area": 4555.58,
+    "water": 3887.27,
+    "vegetation": 109384.37
+  }
+}
