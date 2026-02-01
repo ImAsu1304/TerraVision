@@ -113,7 +113,8 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
           />
         )}
 
-        {selectedState && (
+        {/* FIXED: Border only shows IF analysis is NOT done */}
+        {selectedState && !analysisDone && (
           <GeoJSON
             key={selectedState}
             data={indiaStates.features.find(f => f.properties.ST_NM === selectedState)}
@@ -129,7 +130,6 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
         )}
       </MapContainer>
 
-      {/* Responsive Success Modal: Hidden on medium screens and up (Laptops/PCs) */}
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-[1000] md:hidden">
           <div className="w-80 p-6 bg-gray-900 border-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] rounded-xl pointer-events-auto text-center">
