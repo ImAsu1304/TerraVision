@@ -1,9 +1,9 @@
 import { MapContainer, TileLayer, useMap, GeoJSON } from "react-leaflet";
 import { useEffect } from "react";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import indiaStates from "../assets/indiaStates.geo.json";
 
-//  Zoom-to-State (before analysis)
 const MapUpdater = ({ selectedState }) => {
   const map = useMap();
 
@@ -32,33 +32,25 @@ const MapUpdater = ({ selectedState }) => {
   return null;
 };
 
-//  FIXED: Lock zoom AFTER analysis for Mobile & PC
 const PostAnalysisZoomLock = ({ enabled, selectedState }) => {
   const map = useMap();
 
   useEffect(() => {
     if (!enabled) return;
 
-    // 1. HARD LOCK zoom as per your original code
     map.setMinZoom(7);
     map.setMaxZoom(14);
 
-    // 2. FIND CENTER to force zoom correctly on small screens
-    const feature = indiaStates.features.find(
-      f => f.properties.ST_NM === selectedState
-    );
-    
-    if (feature) {
-      // We use getBounds().getCenter() or fitBounds with 0 padding to force the view
-      const geojsonLayer = L.geoJSON(feature);
-      const center = geojsonLayer.getBounds().getCenter();
-      
-      // Using setView with a coordinate forces the zoom 13 even on tiny phone screens
-      map.setView(center, 13, { animate: true });
+    if (selectedState === "Telangana") {
+      map.setView([17.9, 79.1], 13, { animate: true });
     } else {
-      // Fallback if state logic fails
       map.setZoom(13);
     }
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 400);
+
   }, [enabled, map, selectedState]);
 
   return null;
@@ -83,9 +75,7 @@ const MapPanes = () => {
   return null;
 };
 
-//  MAIN MAP
 const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
-  // Path pointing to your free GitHub Storage
   const tileUrl = "https://imasu1304.github.io/Storage/tiles/telangana/{z}/{x}/{y}.png";
 
   return (
@@ -101,13 +91,11 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
         <MapPanes />
         <MapUpdater selectedState={selectedState} />
 
-        {/* Base map */}
         <TileLayer
           pane="basePane"
           url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
         />
 
-        {/* ML tiles from GitHub Storage */}
         {analysisDone && (
           <TileLayer
             pane="mlPane"
@@ -126,7 +114,6 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
           />
         )}
 
-        {/* Zoom lock AFTER analysis - Pass selectedState to help find center */}
         {analysisDone && (
           <PostAnalysisZoomLock 
             enabled={analysisDone} 
