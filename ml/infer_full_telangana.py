@@ -8,11 +8,9 @@ from rasterio.features import geometry_mask
 from shapely.geometry import shape, mapping
 from model import UNet12Band
 
-# ======================
 # CONFIG
-# ======================
 S2_TIF = "telangana_full_state/telangana_s2.tif"
-OUT_TIF = "telangana_full_state/telangana_classified_rgb.tif"
+OUT_TIF = "telangana_full_state/telangana_classified_rgba.tif"
 GEOJSON_PATH = "../backend/assets/indiaStates.geo.json"
 
 MODEL_PATH = "telangana_state_balanced.pth"
@@ -30,7 +28,6 @@ PALETTE = {
     8: [178, 178, 178]   # Snow
 }
 
-# ======================
 def load_telangana_polygon():
     with open(GEOJSON_PATH, "r") as f:
         data = json.load(f)
@@ -38,29 +35,28 @@ def load_telangana_polygon():
     feat = next(f for f in data["features"] if f["properties"]["ST_NM"] == "Telangana")
     return shape(feat["geometry"])
 
-# ======================
 def main():
-    print("🧠 FULL-STATE INFERENCE WITH MASKING")
+    print("FULL-STATE INFERENCE WITH TRANSPARENCY MASKING")
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"⚙️ Device: {device}")
+    print(f"Device: {device}")
 
     telangana_poly = load_telangana_polygon()
-    print("✅ Telangana polygon loaded")
+    print("Telangana polygon loaded")
 
     model = UNet12Band(n_channels=12, n_classes=9).to(device)
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model.eval()
-    print("✅ Model loaded")
+    print("Model loaded")
 
     with rasterio.open(S2_TIF) as src:
         H, W = src.height, src.width
-        print(f"📐 Image size: {H} × {W}")
+        print(f"Image size: {H} x {W}")
 
-        # --- OUTPUT PROFILE (🔥 FIXED)
+        # OUTPUT PROFILE (UPDATED FOR TRANSPARENCY)
         profile = src.profile.copy()
         profile.update(
-            count=3,
+            count=4,              # Change to 4 channels (RGBA)
             dtype=rasterio.uint8,
             nodata=0,
             compress="lzw",
@@ -70,7 +66,7 @@ def main():
         )
         profile.pop("indexes", None)
 
-        # --- Telangana mask (True = keep)
+        # Telangana mask (True = inside state)
         state_mask = geometry_mask(
             [mapping(telangana_poly)],
             transform=src.transform,
@@ -97,31 +93,35 @@ def main():
                         inp = torch.from_numpy(padded).unsqueeze(0).to(device)
                         pred = torch.argmax(model(inp), dim=1).squeeze().cpu().numpy()
 
-                        rgb = np.zeros((3, h, w), dtype=np.uint8)
+                        # INITIALIZE RGBA CHIP
+                        rgba = np.zeros((4, h, w), dtype=np.uint8)
                         for k, c in PALETTE.items():
                             m = pred[:h, :w] == k
-                            rgb[0][m] = c[0]
-                            rgb[1][m] = c[1]
-                            rgb[2][m] = c[2]
+                            rgba[0][m] = c[0]
+                            rgba[1][m] = c[1]
+                            rgba[2][m] = c[2]
+                            rgba[3][m] = 255  # Default alpha to solid
 
-                        # 🔥 APPLY TELANGANA MASK
+                        # APPLY TRANSPARENCY MASK
                         local_mask = state_mask[y:y+h, x:x+w]
-                        # Outside Telangana → force to Bare Ground (class 7)
                         outside = ~local_mask
-                        rgb[0][outside] = PALETTE[7][0]
-                        rgb[1][outside] = PALETTE[7][1]
-                        rgb[2][outside] = PALETTE[7][2]
+                        
+                        # Set Alpha to 0 (Transparent) for pixels outside Telangana
+                        rgba[3][outside] = 0 
+                        
+                        # Clean up RGB values for transparent areas
+                        rgba[0][outside] = 0
+                        rgba[1][outside] = 0
+                        rgba[2][outside] = 0
 
-
-                        dst.write(rgb, window=window)
+                        dst.write(rgba, window=window)
 
                     if y % 2048 == 0:
                         print(f"✔ Processed {y}/{H} rows")
 
-    print("\n🎉 INFERENCE COMPLETE")
-    print(f"📁 Output: {OUT_TIF}")
+    print("\nINFERENCE COMPLETE")
+    print(f"Output: {OUT_TIF}")
     print("➡ Next: gdal2tiles.py -z 13-14")
 
-# ======================
 if __name__ == "__main__":
     main()

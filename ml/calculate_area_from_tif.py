@@ -4,13 +4,11 @@ import numpy as np
 from rasterio.windows import Window
 from collections import defaultdict
 
-# ======================
 # CONFIG
-# ======================
 TIF_PATH = "telangana_full_state/telangana_classified_rgb.tif"
 OUT_JSON = "../backend/data/telangana.stats.json"
 
-CHUNK_SIZE = 1024   # safe + fast
+CHUNK_SIZE = 1024  
 PIXEL_AREA_KM2 = 0.0001  # 10m × 10m
 
 # Same palette used during inference
@@ -26,15 +24,14 @@ PALETTE = {
     (178, 178, 178): "snow"
 }
 
-# ======================
 def main():
-    print("🧮 Calculating land-cover areas from GeoTIFF")
+    print("Calculating land-cover areas from GeoTIFF")
 
     counts = defaultdict(int)
 
     with rasterio.open(TIF_PATH) as src:
         H, W = src.height, src.width
-        print(f"📐 Image size: {H} × {W}")
+        print(f"Image size: {H} x {W}")
 
         for y in range(0, H, CHUNK_SIZE):
             for x in range(0, W, CHUNK_SIZE):
@@ -74,11 +71,10 @@ def main():
     with open(OUT_JSON, "w") as f:
         json.dump(stats, f, indent=2)
 
-    print("\n✅ AREA CALCULATION COMPLETE")
+    print("\nAREA CALCULATION COMPLETE")
     print(json.dumps(stats, indent=2))
-    print(f"\n📁 Saved → {OUT_JSON}")
+    print(f"\nSaved → {OUT_JSON}")
 
 
-# ======================
 if __name__ == "__main__":
     main()

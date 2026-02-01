@@ -1,0 +1,7 @@
+rasterio
+earthengine-api
+geemap
+geedim
+torch
+scipy
+geopy
