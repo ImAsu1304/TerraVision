@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import indiaStates from "../assets/indiaStates.geo.json";
 
-//  Zoom-to-State (before analysis) - RESTORED
+//  Zoom-to-State (before analysis)
 const MapUpdater = ({ selectedState }) => {
   const map = useMap();
 
@@ -32,20 +32,34 @@ const MapUpdater = ({ selectedState }) => {
   return null;
 };
 
-//  Lock zoom AFTER analysis - RESTORED
-const PostAnalysisZoomLock = ({ enabled }) => {
+//  FIXED: Lock zoom AFTER analysis for Mobile & PC
+const PostAnalysisZoomLock = ({ enabled, selectedState }) => {
   const map = useMap();
 
   useEffect(() => {
     if (!enabled) return;
 
-    // HARD LOCK zoom as per your original code
+    // 1. HARD LOCK zoom as per your original code
     map.setMinZoom(7);
     map.setMaxZoom(14);
 
-    // FORCE tiles to load
-    map.setZoom(13);
-  }, [enabled, map]);
+    // 2. FIND CENTER to force zoom correctly on small screens
+    const feature = indiaStates.features.find(
+      f => f.properties.ST_NM === selectedState
+    );
+    
+    if (feature) {
+      // We use getBounds().getCenter() or fitBounds with 0 padding to force the view
+      const geojsonLayer = L.geoJSON(feature);
+      const center = geojsonLayer.getBounds().getCenter();
+      
+      // Using setView with a coordinate forces the zoom 13 even on tiny phone screens
+      map.setView(center, 13, { animate: true });
+    } else {
+      // Fallback if state logic fails
+      map.setZoom(13);
+    }
+  }, [enabled, map, selectedState]);
 
   return null;
 };
@@ -112,8 +126,13 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
           />
         )}
 
-        {/* Zoom lock AFTER analysis - RESTORED */}
-        {analysisDone && <PostAnalysisZoomLock enabled={analysisDone} />}
+        {/* Zoom lock AFTER analysis - Pass selectedState to help find center */}
+        {analysisDone && (
+          <PostAnalysisZoomLock 
+            enabled={analysisDone} 
+            selectedState={selectedState} 
+          />
+        )}
       </MapContainer>
     </div>
   );
