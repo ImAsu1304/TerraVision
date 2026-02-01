@@ -1,5 +1,5 @@
 import { MapContainer, TileLayer, useMap, GeoJSON } from "react-leaflet";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import indiaStates from "../assets/indiaStates.geo.json";
@@ -76,10 +76,17 @@ const MapPanes = () => {
 };
 
 const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
+  const [showSuccess, setShowSuccess] = useState(false);
   const tileUrl = "https://imasu1304.github.io/Storage/tiles/telangana/{z}/{x}/{y}.png";
 
+  useEffect(() => {
+    if (analysisDone) {
+      setShowSuccess(true);
+    }
+  }, [analysisDone]);
+
   return (
-    <div className="flex-1 h-full bg-black">
+    <div className="flex-1 h-full bg-black relative">
       <MapContainer
         center={[20.5937, 78.9629]}
         zoom={5}
@@ -121,6 +128,24 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
           />
         )}
       </MapContainer>
+
+      {/* Responsive Success Modal: Hidden on medium screens and up (Laptops/PCs) */}
+      {showSuccess && (
+        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-[1000] md:hidden">
+          <div className="w-80 p-6 bg-gray-900 border-2 border-green-500 shadow-[0_0_20px_rgba(34,197,94,0.3)] rounded-xl pointer-events-auto text-center">
+            <h3 className="text-green-500 font-bold mb-2 uppercase tracking-widest">Analysis Complete</h3>
+            <p className="text-gray-300 text-sm mb-4">
+              Satellite data processed. Zoom in to explore high-resolution analysis results.
+            </p>
+            <button
+              onClick={() => setShowSuccess(false)}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded-lg text-xs transition-colors"
+            >
+              DISMISS
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
