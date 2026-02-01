@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 import indiaStates from "../assets/indiaStates.geo.json";
 
-  //  Zoom-to-State (before analysis)
+//  Zoom-to-State (before analysis) - RESTORED
 const MapUpdater = ({ selectedState }) => {
   const map = useMap();
 
@@ -32,14 +32,14 @@ const MapUpdater = ({ selectedState }) => {
   return null;
 };
 
-//  Lock zoom AFTER analysis
+//  Lock zoom AFTER analysis - RESTORED
 const PostAnalysisZoomLock = ({ enabled }) => {
   const map = useMap();
 
   useEffect(() => {
     if (!enabled) return;
 
-    // HARD LOCK zoom
+    // HARD LOCK zoom as per your original code
     map.setMinZoom(7);
     map.setMaxZoom(14);
 
@@ -49,9 +49,6 @@ const PostAnalysisZoomLock = ({ enabled }) => {
 
   return null;
 };
-
-
-// Create panes
 
 const MapPanes = () => {
   const map = useMap();
@@ -74,6 +71,9 @@ const MapPanes = () => {
 
 //  MAIN MAP
 const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
+  // Path pointing to your free GitHub Storage
+  const tileUrl = "https://imasu1304.github.io/Storage/tiles/telangana/{z}/{x}/{y}.png";
+
   return (
     <div className="flex-1 h-full bg-black">
       <MapContainer
@@ -93,26 +93,26 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
           url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
         />
 
-        {/* ML tiles */}
-        {mapData?.tiles && (
+        {/* ML tiles from GitHub Storage */}
+        {analysisDone && (
           <TileLayer
             pane="mlPane"
-            url={`http://localhost:5000${mapData.tiles.url}`}
+            url={tileUrl}
             tileSize={256}
             opacity={1}
-            tms={true} 
+            tms={true}
           />
         )}
 
-        {/* State border */}
-        {mapData?.geojson && (
+        {selectedState && (
           <GeoJSON
-            data={mapData.geojson}
+            key={selectedState}
+            data={indiaStates.features.find(f => f.properties.ST_NM === selectedState)}
             style={{ color: "#00ffff", weight: 2, fillOpacity: 0 }}
           />
         )}
 
-        {/* Zoom lock AFTER analysis */}
+        {/* Zoom lock AFTER analysis - RESTORED */}
         {analysisDone && <PostAnalysisZoomLock enabled={analysisDone} />}
       </MapContainer>
     </div>
