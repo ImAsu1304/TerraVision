@@ -4,6 +4,24 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import indiaStates from "../assets/indiaStates.geo.json";
 
+const ResizeHandler = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+
+    observer.observe(map.getContainer());
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [map]);
+
+  return null;
+};
+
 const MapUpdater = ({ selectedState }) => {
   const map = useMap();
 
@@ -95,6 +113,7 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
         zoomControl={false}
         style={{ height: "100%", width: "100%" }}
       >
+        <ResizeHandler />
         <MapPanes />
         <MapUpdater selectedState={selectedState} />
 
@@ -113,7 +132,6 @@ const MapCanvas = ({ selectedState, mapData, analysisDone }) => {
           />
         )}
 
-        {/* FIXED: Border only shows IF analysis is NOT done */}
         {selectedState && !analysisDone && (
           <GeoJSON
             key={selectedState}
