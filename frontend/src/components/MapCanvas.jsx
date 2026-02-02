@@ -67,7 +67,7 @@ const PostAnalysisZoomLock = ({ enabled, selectedState }) => {
 
     setTimeout(() => {
       map.invalidateSize();
-    }, 400);
+    }, 200);
 
   }, [enabled, map, selectedState]);
 
